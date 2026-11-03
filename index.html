@@ -105,7 +105,7 @@
   </form>
   <div class="thanks" id="thanks">
     <h3>Спасибо!</h3>
-    <p>Ваш ответ отправлен</p>
+    <p>Форма открыта в новой вкладке.<br>Пожалуйста, заполните её там 💚</p>
   </div>
 </div>
 
@@ -113,7 +113,7 @@
 <div class="slide"><img src="slide8.jpg" alt=""></div>
 
 <script>
-  const WHATSAPP = '79631641848';
+  const GOOGLE_FORM = 'https://forms.gle/bbGbrwMjPcqbZT6i8';
 
   function openInvite(){
     document.getElementById('cover').classList.add('fly');
@@ -137,24 +137,10 @@
       return false;
     }
 
-    var name = f.name.value.trim();
-    var attendance = f.attendance.value;
-    var guests = f.guests.value;
-    var diet = f.diet.value.trim() || '—';
-    var comment = f.comment.value.trim() || '—';
+    // Открываем Google Form в новой вкладке
+    window.open(GOOGLE_FORM, '_blank');
 
-    var text =
-      'Здравствуйте! Подтверждаю присутствие.%0A' +
-      '%0A' + encodeURIComponent('Имя: ') + encodeURIComponent(name) + '%0A' +
-      encodeURIComponent('Присутствие: ') + encodeURIComponent(attendance) + '%0A' +
-      encodeURIComponent('Гостей: ') + guests + '%0A' +
-      encodeURIComponent('Питание: ') + encodeURIComponent(diet) + '%0A' +
-      encodeURIComponent('Комментарий: ') + encodeURIComponent(comment);
-
-    var waLink = 'https://wa.me/' + WHATSAPP + '?text=' + text;
-
-    window.open(waLink, '_blank');
-
+    // Показываем "Спасибо" на сайте
     document.getElementById('rsvpForm').style.display = 'none';
     document.getElementById('thanks').classList.add('show');
 
