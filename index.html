@@ -6,7 +6,7 @@
 <title>Алексей и Виктория — 17.04.2027</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#f5f0e6;font-family:Georgia,serif}
+  body{background:#f5f0e6;font-family:Georgia,serif;-webkit-font-smoothing:antialiased}
 
   .slide{position:relative;width:100%;max-width:500px;margin:0 auto}
   .slide>img{width:100%;height:auto;display:block}
@@ -43,6 +43,7 @@
   select.f{appearance:none;cursor:pointer}
   select.f option{font-size:17px;color:#3d4f2f}
   textarea.f{height:5%;line-height:1.3;overflow:hidden}
+  .f:disabled{opacity:0.4;cursor:not-allowed}
 
   .f-name{top:26%}
   .f-att {top:36%}
@@ -51,7 +52,9 @@
   .f-com {top:66%}
 
   .f-send{position:absolute;top:75%;left:15%;width:70%;height:6%;
-          background:transparent;border:0;cursor:pointer;font-size:0;z-index:3}
+          background:transparent;border:0;cursor:pointer;font-size:0;z-index:3;
+          transition:opacity 0.3s}
+  .f-send:disabled{opacity:0.5;cursor:wait}
 
   .thanks{display:none;position:absolute;top:42%;left:15%;width:70%;
           background:rgba(245,240,230,0.97);border:1px solid #c4b89a;
@@ -59,7 +62,6 @@
   .thanks.show{display:block}
   .thanks h3{font-size:26px;font-style:italic;color:#3d4f2f;margin-bottom:8px}
   .thanks p{color:#5a6b4a;font-size:15px;line-height:1.4}
-  .thanks a{color:#5a6b4a}
 
   @media (prefers-reduced-motion:reduce){
     .balloon-wrap{animation:none}
@@ -91,21 +93,21 @@
 <!-- 7. Форма -->
 <div class="slide">
   <img src="slide7.jpg" alt="Будем ждать вас">
-  <form class="rsvp-form" id="rsvpForm" onsubmit="return sendForm(event)">
-    <input class="f f-name" type="text" name="name" placeholder="Ваше имя" required>
+  <form class="rsvp-form" id="rsvpForm">
+    <input class="f f-name" type="text" name="name" placeholder="Ваше имя" maxlength="100" autocomplete="name" required>
     <select class="f f-att" name="attendance" required>
       <option value="">Будете ли вы с нами?</option>
       <option value="Да, буду">Да, буду</option>
       <option value="К сожалению, не смогу">К сожалению, не смогу</option>
     </select>
     <input class="f f-num" type="number" name="guests" min="1" max="20" placeholder="Количество гостей" required>
-    <textarea class="f f-diet" name="diet" placeholder="Пищевые предпочтения или ограничения"></textarea>
-    <textarea class="f f-com" name="comment" placeholder="Ваш комментарий"></textarea>
+    <textarea class="f f-diet" name="diet" placeholder="Пищевые предпочтения или ограничения" maxlength="500"></textarea>
+    <textarea class="f f-com" name="comment" placeholder="Ваш комментарий" maxlength="1000"></textarea>
     <button class="f-send" type="submit">Подтвердить присутствие</button>
   </form>
-  <div class="thanks" id="thanks">
+  <div class="thanks" id="thanks" aria-live="polite">
     <h3>Спасибо!</h3>
-    <p>Форма открыта в новой вкладке.<br>Пожалуйста, заполните её там 💚</p>
+    <p>Ваш ответ получен. Будем рады видеть вас!</p>
   </div>
 </div>
 
@@ -113,39 +115,63 @@
 <div class="slide"><img src="slide8.jpg" alt=""></div>
 
 <script>
-  const GOOGLE_FORM = 'https://forms.gle/bbGbrwMjPcqbZT6i8';
+  const RSVP_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwW_CC9cJizWTyrknyJ0CRUWiFmi8GnhZPysT6Y_5qwP9jTZjd4QZyYVHFWDUHwByeCcA/exec';
 
-  function openInvite(){
+  const form = document.getElementById('rsvpForm');
+  const attendance = form.elements.namedItem('attendance');
+  const guests = form.elements.namedItem('guests');
+  const sendButton = form.querySelector('.f-send');
+
+  function openInvite() {
     document.getElementById('cover').classList.add('fly');
-    setTimeout(function(){
-      window.scrollBy({top:window.innerHeight,behavior:'smooth'});
-    },1600);
+    setTimeout(function () {
+      document.querySelectorAll('.slide')[1].scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 1600);
   }
 
-  function sendForm(e){
+  function updateGuestsField() {
+    const attending = attendance.value === 'Да, буду';
+    guests.required = attending;
+    guests.disabled = !attending;
+    guests.value = attending ? guests.value : '';
+    guests.placeholder = attending ? 'Количество гостей' : 'Не требуется';
+  }
+
+  attendance.addEventListener('change', updateGuestsField);
+
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
-    var f = e.target;
+    if (!form.reportValidity()) return;
 
-    if(!f.name.value.trim()){
-      alert('Пожалуйста, напишите ваше имя');
-      f.name.focus();
-      return false;
+    const data = {
+      name: form.elements.namedItem('name').value.trim(),
+      attendance: attendance.value,
+      guests: attendance.value === 'Да, буду' ? Number(guests.value) : '',
+      diet: form.elements.namedItem('diet').value.trim(),
+      comment: form.elements.namedItem('comment').value.trim()
+    };
+
+    sendButton.disabled = true;
+
+    try {
+      await fetch(RSVP_ENDPOINT, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(data)
+      });
+
+      form.style.display = 'none';
+      document.getElementById('thanks').classList.add('show');
+
+    } catch (error) {
+      alert('Не удалось отправить ответ. Попробуйте ещё раз.');
+      sendButton.disabled = false;
     }
-    if(!f.guests.value || f.guests.value < 1){
-      alert('Укажите количество гостей');
-      f.guests.focus();
-      return false;
-    }
-
-    // Открываем Google Form в новой вкладке
-    window.open(GOOGLE_FORM, '_blank');
-
-    // Показываем "Спасибо" на сайте
-    document.getElementById('rsvpForm').style.display = 'none';
-    document.getElementById('thanks').classList.add('show');
-
-    return false;
-  }
+  });
 </script>
 
 </body>
