@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Алексей и Виктория — 17.04.2027</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
@@ -35,15 +35,23 @@
   /* ===== ФОРМА ===== */
   .rsvp-form{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2}
 
-  .f{position:absolute;left:23%;width:68%;background:transparent;border:0;
-     border-bottom:1px solid rgba(196,184,154,0.4);
+  .field{position:absolute;left:23%;width:68%}
+
+  .f{width:100%;background:transparent;border:0;
+     border-bottom:1px solid rgba(196,184,154,0.5);
      font-family:Georgia,serif;font-size:18px;color:#3d4f2f;
-     outline:none;padding:4px 0;resize:none;font-weight:500}
-  .f::placeholder{color:#3d4f2f;opacity:0.9}
-  select.f{appearance:none;cursor:pointer}
+     outline:none;padding:4px 0;resize:none;font-weight:500;
+     transition:border-color 0.2s, background 0.2s}
+  .f::placeholder{color:#6b7d5a;opacity:0.85}
+  .f:focus{border-bottom-color:#5a6b4a}
+  .f.invalid{border-bottom-color:#a04040;background:rgba(160,64,64,0.04)}
+  .f:disabled{opacity:0.4;cursor:not-allowed}
+
+  select.f{appearance:none;-webkit-appearance:none;cursor:pointer;
+           background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1,1 L6,6 L11,1' stroke='%235a6b4a' stroke-width='1.5' fill='none'/></svg>");
+           background-repeat:no-repeat;background-position:right 4px center;padding-right:24px}
   select.f option{font-size:17px;color:#3d4f2f}
   textarea.f{height:5%;line-height:1.3;overflow:hidden}
-  .f:disabled{opacity:0.4;cursor:not-allowed}
 
   .f-name{top:26%}
   .f-att {top:36%}
@@ -51,21 +59,61 @@
   .f-diet{top:55%}
   .f-com {top:66%}
 
-  .f-send{position:absolute;top:75%;left:15%;width:70%;height:6%;
-          background:transparent;border:0;cursor:pointer;font-size:0;z-index:3;
-          transition:opacity 0.3s}
-  .f-send:disabled{opacity:0.5;cursor:wait}
+  /* Сообщения об ошибках под полями */
+  .err{position:absolute;left:0;top:100%;margin-top:3px;
+       font-size:12px;color:#a04040;min-height:14px;
+       opacity:0;transform:translateY(-3px);
+       transition:opacity 0.2s, transform 0.2s;
+       pointer-events:none}
+  .err.show{opacity:1;transform:translateY(0)}
 
+  /* Кнопка отправки */
+  .f-send{position:absolute;top:75%;left:15%;width:70%;height:6.5%;
+          background:transparent;border:0;cursor:pointer;font-size:0;z-index:3;
+          transition:opacity 0.3s;min-height:44px}
+  .f-send:disabled{opacity:0.6;cursor:wait}
+
+  /* Спиннер на кнопке */
+  .f-send .spinner{
+    position:absolute;top:50%;left:50%;
+    width:22px;height:22px;margin:-11px 0 0 -11px;
+    border:2px solid rgba(255,255,255,0.4);
+    border-top-color:#fff;border-radius:50%;
+    animation:spin 0.7s linear infinite;
+    display:none}
+  .f-send.loading .spinner{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Сообщение об успехе */
   .thanks{display:none;position:absolute;top:42%;left:15%;width:70%;
           background:rgba(245,240,230,0.97);border:1px solid #c4b89a;
-          padding:22px 18px;text-align:center;z-index:4;border-radius:6px}
+          padding:22px 18px;text-align:center;z-index:4;border-radius:6px;
+          animation:fadeIn 0.4s ease}
   .thanks.show{display:block}
   .thanks h3{font-size:26px;font-style:italic;color:#3d4f2f;margin-bottom:8px}
   .thanks p{color:#5a6b4a;font-size:15px;line-height:1.4}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
   @media (prefers-reduced-motion:reduce){
     .balloon-wrap{animation:none}
     .cover.fly .balloon-wrap{animation:none;opacity:0}
+    .err,.thanks{transition:none}
+  }
+
+  /* ===== АДАПТАЦИЯ ПОД ТЕЛЕФОН ===== */
+  @media (max-width:380px){
+    .f{font-size:16px}
+    .err{font-size:11px}
+    .f-name{top:25.5%}
+    .f-att {top:35.5%}
+    .f-num {top:45.5%}
+    .f-diet{top:54.5%}
+    .f-com {top:65.5%}
+    .f-send{top:74.5%}
+  }
+  @media (max-width:340px){
+    .f{font-size:15px}
+    .field{left:20%;width:72%}
   }
 </style>
 </head>
@@ -75,7 +123,7 @@
 <div class="slide cover" id="cover">
   <img src="slide1.jpg" alt="Алексей и Виктория">
   <div class="balloon-wrap"><div class="balloon"><img src="balloon.png" alt=""></div></div>
-  <button class="cover-btn" onclick="openInvite()">Открыть приглашение</button>
+  <button class="cover-btn" onclick="openInvite()" aria-label="Открыть приглашение">Открыть приглашение</button>
 </div>
 
 <!-- 2–6. Макеты -->
@@ -86,26 +134,65 @@
   <img src="slide5.jpg" alt="">
   <a href="https://yandex.ru/maps/?text=Ростов-на-Дону, улица Левобережная, 16"
      target="_blank" rel="noopener"
-     style="position:absolute;top:60.5%;left:18%;width:63%;height:6%;z-index:2"></a>
+     style="position:absolute;top:60.5%;left:18%;width:63%;height:6%;z-index:2"
+     aria-label="Посмотреть площадку на карте"></a>
 </div>
 <div class="slide"><img src="slide6.jpg" alt=""></div>
 
 <!-- 7. Форма -->
 <div class="slide">
   <img src="slide7.jpg" alt="Будем ждать вас">
-  <form class="rsvp-form" id="rsvpForm">
-    <input class="f f-name" type="text" name="name" placeholder="Ваше имя" maxlength="100" autocomplete="name" required>
-    <select class="f f-att" name="attendance" required>
-      <option value="">Будете ли вы с нами?</option>
-      <option value="Да, буду">Да, буду</option>
-      <option value="К сожалению, не смогу">К сожалению, не смогу</option>
-    </select>
-    <input class="f f-num" type="number" name="guests" min="1" max="20" placeholder="Количество гостей" required>
-    <textarea class="f f-diet" name="diet" placeholder="Пищевые предпочтения или ограничения" maxlength="500"></textarea>
-    <textarea class="f f-com" name="comment" placeholder="Ваш комментарий" maxlength="1000"></textarea>
-    <button class="f-send" type="submit">Подтвердить присутствие</button>
+  <form class="rsvp-form" id="rsvpForm" novalidate>
+
+    <div class="field f-name">
+      <input class="f" type="text" name="name" placeholder="Ваше имя"
+             maxlength="100" autocomplete="name"
+             aria-label="Ваше имя" aria-required="true"
+             aria-describedby="err-name" required>
+      <div class="err" id="err-name" role="alert"></div>
+    </div>
+
+    <div class="field f-att">
+      <select class="f" name="attendance"
+              aria-label="Будете ли вы с нами?" aria-required="true"
+              aria-describedby="err-att" required>
+        <option value="">Будете ли вы с нами?</option>
+        <option value="Да, буду">Да, буду</option>
+        <option value="К сожалению, не смогу">К сожалению, не смогу</option>
+      </select>
+      <div class="err" id="err-att" role="alert"></div>
+    </div>
+
+    <div class="field f-num">
+      <input class="f" type="number" name="guests"
+             inputmode="numeric" min="1" max="20"
+             placeholder="Количество гостей"
+             aria-label="Количество гостей"
+             aria-describedby="err-guests">
+      <div class="err" id="err-guests" role="alert"></div>
+    </div>
+
+    <div class="field f-diet">
+      <textarea class="f" name="diet"
+                placeholder="Пищевые предпочтения или ограничения"
+                maxlength="500"
+                aria-label="Пищевые предпочтения или ограничения"></textarea>
+    </div>
+
+    <div class="field f-com">
+      <textarea class="f" name="comment"
+                placeholder="Ваш комментарий"
+                maxlength="1000"
+                aria-label="Ваш комментарий"></textarea>
+    </div>
+
+    <button class="f-send" type="submit" aria-label="Подтвердить присутствие">
+      Подтвердить присутствие
+      <span class="spinner" aria-hidden="true"></span>
+    </button>
   </form>
-  <div class="thanks" id="thanks" aria-live="polite">
+
+  <div class="thanks" id="thanks" role="status" aria-live="polite">
     <h3>Спасибо!</h3>
     <p>Ваш ответ получен. Будем рады видеть вас!</p>
   </div>
@@ -118,43 +205,147 @@
   const RSVP_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwW_CC9cJizWTyrknyJ0CRUWiFmi8GnhZPysT6Y_5qwP9jTZjd4QZyYVHFWDUHwByeCcA/exec';
 
   const form = document.getElementById('rsvpForm');
+  const nameField = form.elements.namedItem('name');
   const attendance = form.elements.namedItem('attendance');
   const guests = form.elements.namedItem('guests');
   const sendButton = form.querySelector('.f-send');
 
+  let isSubmitting = false;
+  let lastSubmitAt = 0;
+
+  /* ===== Анимация обложки ===== */
   function openInvite() {
     document.getElementById('cover').classList.add('fly');
     setTimeout(function () {
       document.querySelectorAll('.slide')[1].scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
+        behavior: 'smooth', block: 'start'
       });
     }, 1600);
   }
 
+  /* ===== Умное поле "Количество гостей" ===== */
   function updateGuestsField() {
     const attending = attendance.value === 'Да, буду';
     guests.required = attending;
     guests.disabled = !attending;
-    guests.value = attending ? guests.value : '';
-    guests.placeholder = attending ? 'Количество гостей' : 'Не требуется';
+    if (!attending) {
+      guests.value = '';
+      guests.placeholder = 'Не требуется';
+      clearError('err-guests', guests);
+    } else {
+      guests.placeholder = 'Количество гостей';
+    }
   }
-
   attendance.addEventListener('change', updateGuestsField);
 
+  /* ===== Работа с ошибками ===== */
+  function showError(id, field, message) {
+    const el = document.getElementById(id);
+    el.textContent = message;
+    el.classList.add('show');
+    if (field) {
+      field.classList.add('invalid');
+      field.setAttribute('aria-invalid', 'true');
+    }
+  }
+  function clearError(id, field) {
+    const el = document.getElementById(id);
+    el.textContent = '';
+    el.classList.remove('show');
+    if (field) {
+      field.classList.remove('invalid');
+      field.removeAttribute('aria-invalid');
+    }
+  }
+  function clearAllErrors() {
+    ['err-name','err-att','err-guests'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = '';
+      el.classList.remove('show');
+    });
+    [nameField, attendance, guests].forEach(f => {
+      f.classList.remove('invalid');
+      f.removeAttribute('aria-invalid');
+    });
+  }
+
+  /* Убираем ошибку при вводе */
+  nameField.addEventListener('input', () => {
+    if (nameField.value.trim()) clearError('err-name', nameField);
+  });
+  attendance.addEventListener('change', () => {
+    if (attendance.value) clearError('err-att', attendance);
+  });
+  guests.addEventListener('input', () => {
+    if (guests.value && Number(guests.value) >= 1) clearError('err-guests', guests);
+  });
+
+  /* ===== Валидация ===== */
+  function validate() {
+    let valid = true;
+    clearAllErrors();
+
+    const name = nameField.value.trim();
+    if (!name) {
+      showError('err-name', nameField, 'Пожалуйста, введите ваше имя');
+      nameField.focus();
+      return false;
+    }
+    if (name.length < 2) {
+      showError('err-name', nameField, 'Имя слишком короткое');
+      nameField.focus();
+      return false;
+    }
+
+    if (!attendance.value) {
+      showError('err-att', attendance, 'Выберите вариант ответа');
+      attendance.focus();
+      return false;
+    }
+
+    if (attendance.value === 'Да, буду') {
+      const g = Number(guests.value);
+      if (!guests.value || isNaN(g)) {
+        showError('err-guests', guests, 'Укажите количество гостей');
+        guests.focus();
+        return false;
+      }
+      if (!Number.isInteger(g) || g < 1 || g > 20) {
+        showError('err-guests', guests, 'От 1 до 20 гостей');
+        guests.focus();
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /* ===== Отправка ===== */
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
-    if (!form.reportValidity()) return;
+
+    // Защита от повторной отправки
+    const now = Date.now();
+    if (isSubmitting) return;
+    if (now - lastSubmitAt < 5000) {
+      showError('err-name', nameField, 'Подождите несколько секунд...');
+      return;
+    }
+
+    if (!validate()) return;
+
+    isSubmitting = true;
+    lastSubmitAt = now;
+    sendButton.classList.add('loading');
+    sendButton.disabled = true;
 
     const data = {
-      name: form.elements.namedItem('name').value.trim(),
+      name: nameField.value.trim(),
       attendance: attendance.value,
       guests: attendance.value === 'Да, буду' ? Number(guests.value) : '',
       diet: form.elements.namedItem('diet').value.trim(),
       comment: form.elements.namedItem('comment').value.trim()
     };
-
-    sendButton.disabled = true;
 
     try {
       await fetch(RSVP_ENDPOINT, {
@@ -164,12 +355,17 @@
         body: JSON.stringify(data)
       });
 
+      // Показываем успех
       form.style.display = 'none';
-      document.getElementById('thanks').classList.add('show');
+      const thanks = document.getElementById('thanks');
+      thanks.classList.add('show');
+      thanks.focus();
 
     } catch (error) {
-      alert('Не удалось отправить ответ. Попробуйте ещё раз.');
+      showError('err-name', nameField, 'Не удалось отправить. Проверьте интернет и попробуйте снова.');
+      sendButton.classList.remove('loading');
       sendButton.disabled = false;
+      isSubmitting = false;
     }
   });
 </script>
